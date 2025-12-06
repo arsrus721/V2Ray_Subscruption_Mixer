@@ -24,27 +24,3 @@
         "port": 8080
     }
 }
-
-DELETE THIS
-----------------------
-type — Necessarily str
-sources — Necessarily list
-profile-title — Necessarily str
-announce — not Necessarily str
-v2raytun-announce — not Necessarily str
-subscription-userinfo-ord — Necessarily int
-profile-update-interval — Necessarily int 
-announce-url — not Necessarily  str
-support-url — not Necessarily str  
-
-replace-ip — not Necessarily  
-replace-ip[n]:
-    sni — sni's list
-    ip — ip to change str
-
-server-settings — Necessarily  
-server-settings:
-    accept-prefix — path str
-    bind — addr str
-    port — port int
------------------------
