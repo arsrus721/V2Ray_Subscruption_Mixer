@@ -46,6 +46,7 @@ if not sources:
 pr_profile_title = profile_title
 pr_profile_title = base64.b64encode(profile_title.encode("utf-8")).decode("utf-8")
 pr_profile_title = "base64:" + pr_profile_title
+
 #Primary code
 
 def def_replace_ip(text, new_ip):
@@ -70,21 +71,18 @@ def decode_vless_lines(b64_text: str) -> list:
         print(f"Error while decoding b64: {e}")
         return []
 
-    # Формируем список строк (убираем пустые)
     lines = [line.strip() for line in decoded.strip().splitlines() if line.strip()]
 
     return lines
 def deprecated_decode_vless_lines(b64_text: str) -> list:
     print(b64_text)
     try:
-        # Добавляем недостающие '=' для корректного декодирования
         b64_text += "=" * (-len(b64_text) % 4)
         decoded = base64.b64decode(b64_text).decode("utf-8")
     except Exception as e:
         print(f"Error while decoding b64: {e}")
         return []
 
-    # Формируем список строк (убираем пустые)
     lines = [line.strip() for line in decoded.strip().splitlines() if line.strip()]
 
     return lines
@@ -108,22 +106,18 @@ async def subsys(sub_id: str, request: Request, response: Response):
     if not request_sub(sources[0] + sub_id):
         raise HTTPException(status_code=404, detail="Subscription not found")
 
-    # Берем subscription-userinfo от источника, который указан через subscription_userinfo_ord
     ss_def_subinfo = sub_info(sources[subscription_userinfo_ord] + sub_id)
 
-    # Определяем announce в зависимости от user-agent
     if "v2raytun" in request.headers.get("user-agent", "").lower():
         ss_announce = v2raytun_announce
     else:
         ss_announce = announce
 
-    # Обрабатываем все источники
     for source in sources:
         raw_text = req_subs(source + sub_id).text
         urls_list = decode_vless_lines(raw_text)
 
         for url in urls_list:
-            # Извлекаем SNI для возможной подмены IP
             query = url.split("?", 1)[1] if "?" in url else ""
             params = urllib.parse.parse_qs(query)
             sni_value = params.get("sni", [""])[0]
@@ -134,14 +128,11 @@ async def subsys(sub_id: str, request: Request, response: Response):
 
             ss_rs_dri += url + "\n"
 
-    # Кодируем результат в base64
     ss_url = base64.b64encode(ss_rs_dri.encode("utf-8")).decode("utf-8")
 
-    # Кодируем announce
     ss_announce = ss_announce
     ss_announce = base64.b64encode(ss_announce.encode("utf-8")).decode("utf-8")
     ss_announce = "base64:" + ss_announce
-    # Формируем заголовки
     headers = {
         "profile-title": pr_profile_title,
         "profile-update-interval": str(profile_update_interval),
