@@ -75,15 +75,15 @@ It combines multiple XRay/V2Ray subscription sources, modifies profile metadata,
 
 | Field                       | Type        | Required | Description                                         |
 | --------------------------- | ----------- | -------- | --------------------------------------------------- |
-| `type`                      | `str`       | ✔️ Yes   | Configuration type (e.g., `"mixer"`)                |
-| `sources`                   | `list[str]` | ✔️ Yes   | List of subscription URLs                           |
-| `profile-title`             | `str`       | ✔️ Yes   | Final profile name                                  |
-| `announce`                  | `str`       | ❌ No     | Profile description                                 |
-| `v2raytun-announce`         | `str`       | ❌ No     | Description for V2RayTun (**supports color codes**) |
-| `subscription-userinfo-ord` | `int`       | ✔️ Yes   | Index for extracting `subscription-userinfo`        |
-| `profile-update-interval`   | `int`       | ✔️ Yes   | Subscription refresh interval (minutes)             |
-| `announce-url`              | `str`       | ❌ No     | URL for announcements                               |
-| `support-url`               | `str`       | ❌ No     | Support contact URL                                 |
+| `type`                      | `str`       |  Yes   | Configuration type (e.g., `"mixer"`)                |
+| `sources`                   | `list[str]` |  Yes   | List of subscription URLs                           |
+| `profile-title`             | `str`       |  Yes   | Final profile name                                  |
+| `announce`                  | `str`       |  No     | Profile description                                 |
+| `v2raytun-announce`         | `str`       |  No     | Description for V2RayTun (**supports color codes**) |
+| `subscription-userinfo-ord` | `int`       |  Yes   | Index for extracting `subscription-userinfo`        |
+| `profile-update-interval`   | `int`       |  Yes   | Subscription refresh interval (minutes)             |
+| `announce-url`              | `str`       |  No     | URL for announcements                               |
+| `support-url`               | `str`       |  No     | Support contact URL                                 |
 
 ---
 
@@ -91,9 +91,9 @@ It combines multiple XRay/V2Ray subscription sources, modifies profile metadata,
 
 | Field               | Type        | Required             | Description                     |
 | ------------------- | ----------- | -------------------- | ------------------------------- |
-| `replace-ip`        | object      | ❌ No                 | IP rewrite rules keyed by index |
-| `replace-ip[n].sni` | `list[str]` | ✔️ Yes (when exists) | List of SNI values to match     |
-| `replace-ip[n].ip`  | `str`       | ✔️ Yes               | New IP replacing matched SNI    |
+| `replace-ip`        | object      |  No                 | IP rewrite rules keyed by index |
+| `replace-ip[n].sni` | `list[str]` |  Yes (when exists) | List of SNI values to match     |
+| `replace-ip[n].ip`  | `str`       |  Yes               | New IP replacing matched SNI    |
 
 Example:
 
@@ -112,10 +112,10 @@ Example:
 
 | Field             | Type   | Required | Description                             |
 | ----------------- | ------ | -------- | --------------------------------------- |
-| `server-settings` | object | ✔️ Yes   | HTTP server configuration               |
-| `accept-prefix`   | `str`  | ✔️ Yes   | URL prefix where subscription is served |
-| `bind`            | `str`  | ✔️ Yes   | Listening address                       |
-| `port`            | `int`  | ✔️ Yes   | Listening port                          |
+| `server-settings` | object |  Yes   | HTTP server configuration               |
+| `accept-prefix`   | `str`  |  Yes   | URL prefix where subscription is served |
+| `bind`            | `str`  |  Yes   | Listening address                       |
+| `port`            | `int`  |  Yes   | Listening port                          |
 
 ---
 
