@@ -118,23 +118,32 @@ Example:
 ---
 
 ## Running the Server
+Linux
+```bash
+python3 main.py
+```
+
+Windows
+```bash
+python main.py
+```
 
 ### Install dependencies
 
 ```bash
-pip install fastapi uvicorn httpx pydantic
+pip install fastapi uvicorn 
 ```
 
 ## Example Subscription URL
 
 ```
-http://SERVER:PORT/cursed/sub
+http://SERVER:PORT/cursed/sub/subscribe
 ```
 
 or
 
 ```
-http://SERVER:PORT/cursed/sub
+http://SERVER:PORT/cursed/sub/subscribe
 ```
 
 ---
