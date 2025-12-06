@@ -1,5 +1,7 @@
 # xray-sub-mixer
 
+## I don't have many time to debug if you find any bug, please create issue
+
 ---
 
 # XRay Subscription Mixer
