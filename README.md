@@ -6,7 +6,7 @@
 
 # XRay Subscription Mixer
 
-A lightweight and flexible **subscription mixer** built with **FastAPI + Uvicorn**.
+A lightweight and flexible **subscription mixer** built with **FastAPI + Uvicorn + requests**.
 It combines multiple XRay/V2Ray subscription sources, modifies profile metadata, adjusts V2RayTun-specific fields, rewrites IPs based on SNI detection, and serves the final subscription over HTTP.
 
 ---
@@ -133,7 +133,7 @@ python main.py
 ### Install dependencies
 
 ```bash
-pip install fastapi uvicorn 
+pip install fastapi uvicorn requests
 ```
 
 ## Example Subscription URL
