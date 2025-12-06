@@ -1,6 +1,6 @@
 # xray-sub-mixer
 
-## <span style="color: grey;">I don't have many time to debug if you find any bug, please create issue</span>
+## <span style="color: #26203b;">I don't have many time to debug if you find any bug, please create issue</span>
 
 ---
 
