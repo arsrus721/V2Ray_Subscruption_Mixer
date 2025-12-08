@@ -11,7 +11,8 @@
     "replace-ip": {
         "0": {
             "sni": ["www.google.com", "google.com"],
-            "ip": "1.2.3.4"
+            "ip": "1.2.3.4",
+            "port": 8443
         },
         "1": {
             "sni": ["www.speedtest.net", "speedtest.net"],
