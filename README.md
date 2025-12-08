@@ -51,7 +51,8 @@ It combines multiple XRay/V2Ray subscription sources, modifies profile metadata,
     "replace-ip": {
         "0": {
             "sni": ["www.google.com", "google.com"],
-            "ip": "1.2.3.4"
+            "ip": "1.2.3.4",
+            "port": 8443
         },
         "1": {
             "sni": ["www.speedtest.net", "speedtest.net"],
@@ -94,14 +95,16 @@ It combines multiple XRay/V2Ray subscription sources, modifies profile metadata,
 | `replace-ip`        | object      |  No                 | IP rewrite rules keyed by index |
 | `replace-ip[n].sni` | `list[str]` |  Yes (when exists) | List of SNI values to match     |
 | `replace-ip[n].ip`  | `str`       |  Yes               | New IP replacing matched SNI    |
+| `replace-ip[n].port`| `int`       |  No                | Change port in vless url
 
 Example:
 
 ```json
 "replace-ip": {
     "0": {
-        "sni": ["example.com"],
-        "ip": "1.1.1.1"
+        "sni": ["www.example.com", "example.com"],
+        "ip": "1.1.1.1",
+        "port": 8443
     }
 }
 ```
@@ -137,12 +140,6 @@ pip install fastapi uvicorn requests
 ```
 
 ## Example Subscription URL
-
-```
-http://SERVER:PORT/cursed/sub/subscribe
-```
-
-or
 
 ```
 http://SERVER:PORT/cursed/sub/subscribe
