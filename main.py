@@ -120,12 +120,13 @@ def deprecated_find_ip_by_sni(sni_value: str, replace_ip_rules: dict) -> str | N
 def find_rule_by_sni(sni_value: str, rules: dict):
     for rule in rules.values():
         for sni in rule.get("sni", []):
-            if sni in sni_value:
+            if sni_value.strip().lower() == sni.strip().lower():
                 return {
                     "ip": rule.get("ip"),
                     "port": rule.get("port")
                 }
     return None
+
 
 
 @app.get(f"{accept_prefix}/{{sub_id}}")
