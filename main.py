@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Request, HTTPException, Response
+from urllib.parse import urlparse, urlunparse, ParseResult
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import urllib.parse
 import requests
 import uvicorn
+import urllib
 import base64
 import json
 import sys
@@ -52,6 +53,32 @@ pr_profile_title = "base64:" + pr_profile_title
 def def_replace_ip(text, new_ip):
     print(f"Changing {text} to {new_ip}")
     return re.sub(r'\b\d{1,3}(?:\.\d{1,3}){3}\b', new_ip, text)
+def replace_ip_port(url: str, new_ip: str, new_port: int | None):
+    parsed = urlparse(url)
+    if '@' in parsed.netloc:
+        userinfo, hostport = parsed.netloc.split('@', 1)
+    else:
+        return url
+    if ':' in hostport:
+        host, port = hostport.split(':', 1)
+    else:
+        host = hostport
+        port = None
+    host = new_ip
+    if new_port is not None:
+        port = str(new_port)
+    new_hostport = f"{host}:{port}" if port else host
+    new_netloc = f"{userinfo}@{new_hostport}"
+    new_parsed = ParseResult(
+        scheme=parsed.scheme,
+        netloc=new_netloc,
+        path=parsed.path,
+        params=parsed.params,
+        query=parsed.query,
+        fragment=parsed.fragment
+    )
+
+    return urlunparse(new_parsed)
 def request_sub(url):
     response = requests.get(url=url)
     if response.status_code != 200:
@@ -70,7 +97,6 @@ def decode_vless_lines(b64_text: str) -> list:
     except Exception as e:
         print(f"Error while decoding b64: {e}")
         return []
-
     lines = [line.strip() for line in decoded.strip().splitlines() if line.strip()]
 
     return lines
@@ -82,37 +108,39 @@ def deprecated_decode_vless_lines(b64_text: str) -> list:
     except Exception as e:
         print(f"Error while decoding b64: {e}")
         return []
-
     lines = [line.strip() for line in decoded.strip().splitlines() if line.strip()]
 
     return lines
-def find_ip_by_sni(sni_value: str, replace_ip_rules: dict) -> str | None:
+def deprecated_find_ip_by_sni(sni_value: str, replace_ip_rules: dict) -> str | None:
     for rule in replace_ip_rules.values():
         for sni in rule["sni"]:
             if sni in sni_value:
                 return rule["ip"]
     return None
+def find_rule_by_sni(sni_value: str, rules: dict):
+    for rule in rules.values():
+        for sni in rule.get("sni", []):
+            if sni in sni_value:
+                return {
+                    "ip": rule.get("ip"),
+                    "port": rule.get("port")
+                }
+    return None
+
 
 @app.get(f"{accept_prefix}/{{sub_id}}")
 async def subsys(sub_id: str, request: Request, response: Response):
     ss_rs_dri = ""
-
     if not sources or len(sources) == 0:
         raise HTTPException(status_code=500, detail="No sources configured")
-
     print(f"[INFO] LIST {sources[0] + sub_id}")
-
-    # Проверяем доступность первого источника
     if not request_sub(sources[0] + sub_id):
         raise HTTPException(status_code=404, detail="Subscription not found")
-
     ss_def_subinfo = sub_info(sources[subscription_userinfo_ord] + sub_id)
-
     if "v2raytun" in request.headers.get("user-agent", "").lower():
         ss_announce = v2raytun_announce
     else:
         ss_announce = announce
-
     for source in sources:
         raw_text = req_subs(source + sub_id).text
         urls_list = decode_vless_lines(raw_text)
@@ -122,14 +150,13 @@ async def subsys(sub_id: str, request: Request, response: Response):
             params = urllib.parse.parse_qs(query)
             sni_value = params.get("sni", [""])[0]
 
-            new_ip = find_ip_by_sni(sni_value, replace_ip)
-            if new_ip:
-                url = def_replace_ip(url, new_ip)
-
+            rule = find_rule_by_sni(sni_value, replace_ip)
+            if rule:
+                new_ip = rule["ip"]
+                new_port = rule.get("port")
+                url = replace_ip_port(url, new_ip, new_port)
             ss_rs_dri += url + "\n"
-
     ss_url = base64.b64encode(ss_rs_dri.encode("utf-8")).decode("utf-8")
-
     ss_announce = ss_announce
     ss_announce = base64.b64encode(ss_announce.encode("utf-8")).decode("utf-8")
     ss_announce = "base64:" + ss_announce
@@ -143,7 +170,6 @@ async def subsys(sub_id: str, request: Request, response: Response):
     }
 
     return Response(content=ss_url, media_type="text/plain; charset=utf-8", headers=headers)
-
 
 if __name__ == "__main__": 
     uvicorn.run("main:app", host=bind, port=port, reload=True)
