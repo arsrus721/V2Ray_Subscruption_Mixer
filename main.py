@@ -117,17 +117,16 @@ def deprecated_find_ip_by_sni(sni_value: str, replace_ip_rules: dict) -> str | N
             if sni in sni_value:
                 return rule["ip"]
     return None
-def find_rule_by_sni(sni_value: str, rules: dict):
+def find_rule_by_sni_with_flag(sni_value: str, rules: dict):
     for rule in rules.values():
         for sni in rule.get("sni", []):
             if sni_value.strip().lower() == sni.strip().lower():
                 return {
                     "ip": rule.get("ip"),
-                    "port": rule.get("port")
+                    "port": rule.get("port"),
+                    "flag": rule.get("flag", "")
                 }
     return None
-
-
 
 @app.get(f"{accept_prefix}/{{sub_id}}")
 async def subsys(sub_id: str, request: Request, response: Response):
@@ -145,22 +144,28 @@ async def subsys(sub_id: str, request: Request, response: Response):
     for source in sources:
         raw_text = req_subs(source + sub_id).text
         urls_list = decode_vless_lines(raw_text)
-
         for url in urls_list:
             query = url.split("?", 1)[1] if "?" in url else ""
             params = urllib.parse.parse_qs(query)
             sni_value = params.get("sni", [""])[0]
-
-            rule = find_rule_by_sni(sni_value, replace_ip)
+            rule = find_rule_by_sni_with_flag(sni_value, replace_ip)
             if rule:
                 new_ip = rule["ip"]
                 new_port = rule.get("port")
+                flag = rule.get("flag", "")
                 url = replace_ip_port(url, new_ip, new_port)
+                hash_index = url.rfind("#")
+                if hash_index != -1:
+                    url_part = url[:hash_index]
+                    name_part = url[hash_index+1:]
+                    url = f"{url_part}#{flag}{name_part}"
             ss_rs_dri += url + "\n"
+
     ss_url = base64.b64encode(ss_rs_dri.encode("utf-8")).decode("utf-8")
     ss_announce = ss_announce
     ss_announce = base64.b64encode(ss_announce.encode("utf-8")).decode("utf-8")
     ss_announce = "base64:" + ss_announce
+    
     headers = {
         "profile-title": pr_profile_title,
         "profile-update-interval": str(profile_update_interval),
@@ -169,7 +174,6 @@ async def subsys(sub_id: str, request: Request, response: Response):
         "announce-url": announce_url,
         "support-url": support_url
     }
-
     return Response(content=ss_url, media_type="text/plain; charset=utf-8", headers=headers)
 
 if __name__ == "__main__": 
