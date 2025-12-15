@@ -16,7 +16,8 @@
         },
         "1": {
             "sni": ["www.speedtest.net", "speedtest.net"],
-            "ip": "2.3.4.5"
+            "ip": "2.3.4.5",
+            "flag": "🇷🇺"
         }
     },
     "server-settings": {
