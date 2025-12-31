@@ -1,7 +1,3 @@
-# xray-sub-mixer
-
-## <span style="color: #26203b;">I don't have many time to debug if you find any bug, please create issue</span>
-
 ---
 
 # XRay Subscription Mixer
@@ -28,6 +24,11 @@ It combines multiple XRay/V2Ray subscription sources, modifies profile metadata,
 * Runs on **FastAPI + Uvicorn**
 * Auto-update interval for fetching sources (`profile-update-interval`)
 * Configurable HTTP endpoint prefix (`server-settings.accept-prefix`)
+
+---
+## Sequence diagram
+
+![diagram](example.png)
 
 ---
 
