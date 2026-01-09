@@ -1,0 +1,25 @@
+{
+    "type": "mixer",
+    "sources": ["http://url/path/", "https://url1/path/"],
+    "profile-title": "NAME VPN",
+    "announce": "ABOUT",
+    "v2raytun-announce": "#d9c1c1ABOUT",
+    "subscription-userinfo-ord": 0,
+    "profile-update-interval": 1,
+    "announce-url": "https://example.com/path",
+    "support-url": "https://example.com/path",
+    "rules": [
+        {
+            "sni": ["www.google.com", "google.com"],
+            "base": [{"type": "rewriteip", "ips": ["1.2.3.4"]},{"type": "rewriteport", "port": 8080}, {"type": "rewritesni", "sni": ["youtube.com", "www.youtube.com"]}],
+            "comment":[{"type":"start-add","text":"TEXT"},{"type":"end-add","text":"TEXT"},{"type":"start-exactly-add","text":"TEXT","count":1},{"type":"end-exactly-add","text":"TEXT","count":1},{"type":"add-after","text":"TEXT","after":"TEXT"},{"type":"add-before","text":"TEXT","before":"before"},{"type":"delete-all-after","after":"TEXT"},{"type":"delete-all-before","before":"TEXT"},{"type":"start-delete","count":1},{"type":"end-delete","count":1}]
+
+        }
+    ],
+    "server-settings": {
+        "accept-prefix": "/cursed/sub",
+        "bind": "0.0.0.0",
+        "port": 8080,
+        "advanced-print": true
+    }
+}
