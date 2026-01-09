@@ -19,7 +19,7 @@ V2Ray Subscription Mixer is a tool for merging multiple V2Ray subscriptions into
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/V2Ray_Subscription_Mixer.git
+git clone https://github.com/arsrus721/V2Ray_Subscription_Mixer.git
 cd V2Ray_Subscription_Mixer
 ```
 
