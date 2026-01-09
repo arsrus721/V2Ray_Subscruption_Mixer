@@ -10,7 +10,24 @@ import base64
 import json
 import time
 import sys
+import os
 import re
+
+# Debug
+def event_register(event):
+    if advanced_print is True:
+        print(event)
+    return None
+def check_none(value, name):
+    if value is None:
+        print(f"[INIT] {name} is None")
+        sys.exit()
+    return value
+def check(value, name, ntr=None):
+    if value is None:
+        print(f"[INIT] {name} is None")
+        return ntr
+    return value
 
 # Variables
 
@@ -18,24 +35,30 @@ app = FastAPI()
 
 # READ CONFIG FILE
 
+if not os.path.exists("config.json"):
+    print("[INIT] config.json not found")
+    sys.exit()
+
 with open("config.json", "r", encoding="utf-8") as f:
     init_file = json.load(f)
-_type = init_file.get("type")
-sources = init_file.get("sources")
-profile_title = init_file.get("profile-title") or "SUB SYSTEM"
-announce = init_file.get("announce") or "SUB SYSTEM ANNOUNCE"
-v2raytun_announce = init_file.get("v2raytun-announce") or announce
-subscription_userinfo_ord = init_file.get("subscription-userinfo-ord") or 0
-replace_ip = init_file.get("replace-ip") or None
-rules = init_file.get("rules") or None
-profile_update_interval = init_file.get("profile-update-interval") or 1
-announce_url = init_file.get("announce-url") or None
-support_url = init_file.get("support-url") or None
-server_settings = init_file.get("server-settings", {})
-bind = server_settings.get("bind") or "127.0.0.1"
-port = server_settings.get("port") or 8080
-accept_prefix = server_settings.get("accept-prefix") or "/sub"
-advanced_print = server_settings.get("advanced-print") or False
+    event_register("[INIT] Started")
+
+_type = check_none(init_file.get("type"), "type")
+sources = check_none(init_file.get("sources"), "sources")
+profile_title = check_none(init_file.get("profile-title"), "profile-title")
+announce = check_none(init_file.get("announce"), "announce")
+v2raytun_announce = check_none(init_file.get("v2raytun-announce"), "v2raytun-announce")
+subscription_userinfo_ord = check_none(init_file.get("subscription-userinfo-ord"), "subscription-userinfo-ord")
+replace_ip = check_none(init_file.get("replace-ip"), "replace-ip")
+rules = check(init_file.get("rules"), "rules")
+profile_update_interval = check_none(init_file.get("profile-update-interval"), "profile-update-interval")
+announce_url = check_none(init_file.get("announce-url"), "announce-url")
+support_url = check_none(init_file.get("support-url"), "support-url")
+server_settings = check_none(init_file.get("server-settings"), "server-settings")
+bind = check_none(server_settings.get("bind"), "server-settings.bind")
+port = check_none(server_settings.get("port"), "server-settings.port")
+accept_prefix = check_none(server_settings.get("accept-prefix"), "server-settings.accept-prefix")
+advanced_print = check(server_settings.get("advanced-print"), "server-settings.advanced-print", False)
 
 # CONFIG CHECK
 
@@ -54,10 +77,6 @@ pr_profile_title = "base64:" + pr_profile_title
 
 #Primary code
 
-def event_register(event):
-    if advanced_print is True:
-        print(event)
-    return None
 def request_sub(url): # USED
     response = requests.get(url=url)
     event_register("[func:request_sub] requested")
