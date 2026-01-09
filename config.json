@@ -8,18 +8,7 @@
     "profile-update-interval": 1,
     "announce-url": "https://example.com/path",
     "support-url": "https://example.com/path",
-    "replace-ip": {
-        "0": {
-            "sni": ["www.google.com", "google.com"],
-            "ip": "1.2.3.4",
-            "port": 8443
-        },
-        "1": {
-            "sni": ["www.speedtest.net", "speedtest.net"],
-            "ip": "2.3.4.5",
-            "flag": "🇷🇺"
-        }
-    },
+    "rules": [],
     "server-settings": {
         "accept-prefix": "/cursed/sub",
         "bind": "0.0.0.0",
