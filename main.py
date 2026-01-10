@@ -13,11 +13,8 @@ import sys
 import os
 import re
 
-# Debug
-def event_register(event):
-    if advanced_print is True:
-        print(event)
-    return None
+# Checks
+
 def check_none(value, name):
     if value is None:
         print(f"[INIT] {name} is None")
@@ -28,6 +25,40 @@ def check(value, name, ntr=None):
         print(f"[INIT] {name} is None")
         return ntr
     return value
+
+# READ CONFIG FILE
+
+if not os.path.exists("config.json"):
+    print("[INIT] config.json not found")
+    sys.exit()
+
+with open("config.json", "r", encoding="utf-8") as f:
+    init_file = json.load(f)
+    event_register("[INIT] Started")
+
+_type = check_none(init_file.get("type"), "type")
+sources = check_none(init_file.get("sources"), "sources")
+profile_title = check_none(init_file.get("profile-title"), "profile-title")
+announce = check_none(init_file.get("announce"), "announce")
+v2raytun_announce = check_none(init_file.get("v2raytun-announce"), "v2raytun-announce")
+subscription_userinfo_ord = check_none(init_file.get("subscription-userinfo-ord"), "subscription-userinfo-ord")
+replace_ip = check(init_file.get("replace-ip"), "replace-ip")
+rules = check(init_file.get("rules"), "rules")
+profile_update_interval = check_none(init_file.get("profile-update-interval"), "profile-update-interval")
+announce_url = check_none(init_file.get("announce-url"), "announce-url")
+support_url = check_none(init_file.get("support-url"), "support-url")
+server_settings = check_none(init_file.get("server-settings"), "server-settings")
+bind = check_none(server_settings.get("bind"), "server-settings.bind")
+port = check_none(server_settings.get("port"), "server-settings.port")
+accept_prefix = check_none(server_settings.get("accept-prefix"), "server-settings.accept-prefix")
+advanced_print = check(server_settings.get("advanced-print"), "server-settings.advanced-print", False)
+
+# Debug
+
+def event_register(event):
+    if advanced_print is True:
+        print(event)
+    return None
 
 # Variables
 
