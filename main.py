@@ -136,40 +136,33 @@ def decode_vless_lines(b64_text: str) -> list: # USED
     lines = [line.strip() for line in decoded.strip().splitlines() if line.strip()]
     event_register("[func:decode_vless_lines] decoded")
     return lines
-def base_finder(sni_value: str, rules: list): # USED
-    rew_sni = None
-    new_port = None
+def base_finder(sni_value: str, rules: list):
     ip_list = None
+    new_port = None
+    rew_sni = None
+
     for rule in rules:
         for sni in rule.get("sni", []):
-            if sni_value.strip().lower() == sni.strip().lower():
-                for base in rule.get("base", []):
-                    if base.get("type", "") == "rewriteip":
-                        event_register("[func:base_finder] finded type rewriteip")
-                        ip_list = base.get("ips", [])
-                        if not ip_list:
-                            ip_list = []
-                        event_register(f"[func:base_finder] ips: {ip_list}")
-                    elif base.get("type", "") == "rewriteport":
-                        event_register("[func:base_finder] finded type rewriteport")
-                        new_port = base.get("port")
-                        event_register("[func:base_finder] New port: {new_port}")
-                        if not new_port:
-                            new_port = None
-                        event_register(f"[func:base_finder] port: {new_port}")
-                    elif base.get("type", "") == "rewritesni":
-                        event_register("[func:base_finder] finded type rewritesni")
-                        rew_sni = base.get("sni", [])
-                        if not rew_sni:
-                            rew_sni = []
-                        event_register(f"[func:base_finder] sni's: {rew_sni}")
-                        need_to_return = {
-                            "ip": random.choice(ip_list), 
-                            "port": new_port,
-                            "sni": random.choice(rew_sni)
-                        }
-                        event_register(f"[func:base_finder] FIN Return: {need_to_return}")
-                        return need_to_return
+            if sni_value.strip().lower() != sni.strip().lower():
+                continue
+            for base in rule.get("base", []):
+                btype = base.get("type")
+                if btype == "rewriteip":
+                    ip_list = base.get("ips") or None
+
+                elif btype == "rewriteport":
+                    new_port = base.get("port")
+
+                elif btype == "rewritesni":
+                    rew_sni = base.get("sni") or None
+            if ip_list or new_port or rew_sni:
+                result = {
+                    "ip": random.choice(ip_list) if ip_list else None,
+                    "port": new_port,
+                    "sni": random.choice(rew_sni) if rew_sni else None
+                }
+                event_register(f"[func:base_finder] FIN Return: {result}")
+                return result
     event_register("[func:base_finder] None returned")
     return None
 def comment_finder(sni_value: str, rules: list): # USED
@@ -180,13 +173,14 @@ def comment_finder(sni_value: str, rules: list): # USED
     event_register("[func:comment_finder] Return: None")
     return None
 def comment_handler(remark_first, comments):  # USED
+    event_register(f"[func:comment_handler] Gotted remark: {remark_first}")
     if not comments:
         event_register("[func:comment_handler] no comments provided")
         return remark_first
 
     event_register("[func:comment_handler] start processing comments")
 
-    text = remark_first
+    text = urllib.parse.unquote(remark_first)
 
     for comment in comments:
         ctype = comment.get("type", "")
@@ -245,8 +239,8 @@ def comment_handler(remark_first, comments):  # USED
         elif ctype == "start-delete":
             event_register("[func:comment_handler] type start-delete matched")
             count = comment.get("count", 0)
-            text = text[:count]
-
+            text = text[count:]
+            event_register(f"[func:comment_handler] start-delete FIN: {text}")
         elif ctype == "end-delete":
             event_register("[func:comment_handler] type end-delete matched")
             count = comment.get("count", 0)
@@ -279,37 +273,59 @@ def replace_vless_params(vless_url: str,new_ip: str | None = None,new_port: int 
     new_parsed = parsed._replace(netloc=new_netloc,query=new_query)
     event_register("[func:replace_vless_params] returned")
     return urlunparse(new_parsed).replace("http://", "vless://")
-def vlesses_creator(urls_list): # USED
+def vlesses_creator(urls_list):
     ss_rs_dri = ""
-    formated_text = None
+
     for url in urls_list:
+        event_register(f"[func:vlesses_creator] Currently working on url: {url}")
+
         parsed = urllib.parse.urlparse(url)
         params = urllib.parse.parse_qs(parsed.query)
         sni_value = params.get("sni", [""])[0]
         fragment_value = parsed.fragment
+
         base_rule = base_finder(sni_value, rules=rules)
         com_rules = comment_finder(sni_value=sni_value, rules=rules)
+
+        formated_text = None
+
+        # 1. comments
         if com_rules:
             event_register("[func:vlesses_creator] com_rules not None")
-            formated_text = comment_handler(remark_first=fragment_value, comments=com_rules)
+            formated_text = comment_handler(
+                remark_first=fragment_value,
+                comments=com_rules
+            )
+
+        # 2. base rule
         if base_rule:
             event_register("[func:vlesses_creator] base_rule not None")
-            new_ip = base_rule.get("ip", "")
-            new_port = base_rule.get("port")
-            new_sni = base_rule.get("sni", "")
-            url = replace_vless_params(vless_url=url, new_ip=new_ip, new_port=new_port, new_sni=new_sni)
-            hash_index = url.rfind("#")
-            if hash_index != -1:
-                url_part = url[:hash_index]
-                name_part = url[hash_index+1:]
-                if formated_text is not None:
-                    event_register("[func:vlesses_creator] formated_text not None")
-                    url = f"{url_part}#{formated_text}"
-                else:
-                    url = f"{url_part}#{name_part}"
-            event_register(f"[func:vlesses_creator] finally url: {url}")
-            ss_rs_dri += url + "\n"
+            url = replace_vless_params(
+                vless_url=url,
+                new_ip=base_rule.get("ip", ""),
+                new_port=base_rule.get("port"),
+                new_sni=base_rule.get("sni", "")
+            )
+
+        # 3. fragment
+        hash_index = url.rfind("#")
+        if hash_index != -1:
+            url_part = url[:hash_index]
+            name_part = url[hash_index + 1:]
+
+            if formated_text is not None:
+                url = f"{url_part}#{formated_text}"
+            else:
+                url = f"{url_part}#{name_part}"
+
+        event_register(f"[func:vlesses_creator] finally url: {url}")
+
+        # 4. ALWAYS append
+        ss_rs_dri += url + "\n"
+
+    event_register(f"[func:vlesses_creator] ss_rs_dri returned: {ss_rs_dri}")
     return ss_rs_dri
+
 @app.get(f"{accept_prefix}/{{sub_id}}")
 async def subsys(sub_id: str, request: Request, response: Response):
     start = time.time()
@@ -328,10 +344,14 @@ async def subsys(sub_id: str, request: Request, response: Response):
         ss_announce = v2raytun_announce
     else:
         ss_announce = announce
+    urls_list = []
     for source in sources:
+        event_register(f"[func:subsys] Currently requesting: {source}")
         raw_text = req_subs(source + sub_id).text
-        urls_list = decode_vless_lines(raw_text)
+        urls_list.extend(decode_vless_lines(raw_text)) 
+    event_register(f"[func:subsys] Finnaly urls_list: {urls_list}")
     ss_rs_dri = vlesses_creator(urls_list)
+    event_register("[func:subsys] ss_rs_dri created")
     ss_url = base64.b64encode(
         ss_rs_dri.encode("utf-8")
     ).decode("utf-8")
@@ -350,6 +370,7 @@ async def subsys(sub_id: str, request: Request, response: Response):
     event_register(f"[func:subsys] Finally headers: {headers}")
     end = time.time()
     event_register(f"[func:subsys] Elapsed time {end - start}")
+    event_register(f"[func:subsys] Url Config {ss_rs_dri}")
     return Response(
         content=ss_url,
         media_type="text/plain; charset=utf-8",
