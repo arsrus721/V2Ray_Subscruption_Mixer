@@ -34,7 +34,7 @@ if not os.path.exists("config.json"):
 
 with open("config.json", "r", encoding="utf-8") as f:
     init_file = json.load(f)
-    event_register("[INIT] Started")
+    print("[INIT] Started")
 
 _type = check_none(init_file.get("type"), "type")
 sources = check_none(init_file.get("sources"), "sources")
