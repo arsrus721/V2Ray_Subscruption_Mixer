@@ -41,7 +41,8 @@ sources = check_none(init_file.get("sources"), "sources")
 profile_title = check_none(init_file.get("profile-title"), "profile-title")
 announce = check_none(init_file.get("announce"), "announce")
 v2raytun_announce = check_none(init_file.get("v2raytun-announce"), "v2raytun-announce")
-subscription_userinfo_ord = check_none(init_file.get("subscription-userinfo-ord"), "subscription-userinfo-ord")
+subscription_userinfo = check_none(init_file.get("subscription-userinfo"), "subscription-userinfo")
+expire_source = check_none(subscription_userinfo.get("expire-source"), "subscription-userinfo.expire-source")
 replace_ip = check(init_file.get("replace-ip"), "replace-ip")
 rules = check(init_file.get("rules"), "rules")
 profile_update_interval = check_none(init_file.get("profile-update-interval"), "profile-update-interval")
@@ -79,7 +80,7 @@ sources = check_none(init_file.get("sources"), "sources")
 profile_title = check_none(init_file.get("profile-title"), "profile-title")
 announce = check_none(init_file.get("announce"), "announce")
 v2raytun_announce = check_none(init_file.get("v2raytun-announce"), "v2raytun-announce")
-subscription_userinfo_ord = check_none(init_file.get("subscription-userinfo-ord"), "subscription-userinfo-ord")
+subscription_userinfo = check_none(init_file.get("subscription-userinfo"), "subscription-userinfo-ord")
 replace_ip = check(init_file.get("replace-ip"), "replace-ip")
 rules = check(init_file.get("rules"), "rules")
 profile_update_interval = check_none(init_file.get("profile-update-interval"), "profile-update-interval")
@@ -325,6 +326,23 @@ def vlesses_creator(urls_list):
 
     event_register(f"[func:vlesses_creator] ss_rs_dri returned: {ss_rs_dri}")
     return ss_rs_dri
+def subscription_userinfo_simple(header_value: str):
+    for item in header_value.split(";"):
+        key, value = item.strip().split("=")
+        event_register(f"[func:subscription_userinfo_simple] Subscription-userinfo key: {key} value: {value}")
+        if key == "upload":
+            fin_u = value
+        elif key == "download":
+            fin_d = value
+        elif key == "total":
+            fin_t = value
+        elif key == "expire":
+            fin_e = value
+        else:
+            event_register(f"[func:subscription_userinfo_simple] {key} not matched")
+    return fin_u, fin_d, fin_t, fin_e
+def combine_stats(**kwargs):
+    return '; '.join(f"{key}={value}" for key, value in kwargs.items()) + ';'
 
 @app.get(f"{accept_prefix}/{{sub_id}}")
 async def subsys(sub_id: str, request: Request, response: Response):
@@ -338,7 +356,24 @@ async def subsys(sub_id: str, request: Request, response: Response):
         end = time.time()
         event_register(f"[func:subsys] Elapsed time {end - start}")
         raise HTTPException(status_code=404, detail="Subscription not found")
-    ss_def_subinfo = sub_info(sources[subscription_userinfo_ord] + sub_id)
+
+    fin_upload = 0
+    fin_download = 0
+    fin_total = 0
+    fin_expire = 0
+    for index, source in enumerate(sources):
+        if expire_source is None:
+            print("expire-source not found")
+        upload_key, download_key, total_key, expire_key = subscription_userinfo_simple(sub_info(source + sub_id))
+        fin_upload = fin_upload + upload_key
+        download_key = fin_download + download_key
+        total_key = fin_total + total_key
+        if index == expire_source:
+            fin_expire = expire_key
+
+    fin_subscription_userinfo = combine_stats(upload=fin_upload, download=fin_download, total=fin_total, expire=fin_expire)
+
+
     if "v2raytun" in request.headers.get("user-agent", "").lower():
         event_register("[func:subsys] v2raytun matched")
         ss_announce = v2raytun_announce
@@ -363,7 +398,7 @@ async def subsys(sub_id: str, request: Request, response: Response):
         "profile-title": pr_profile_title,
         "profile-update-interval": str(profile_update_interval),
         "announce": ss_announce,
-        "subscription-userinfo": str(ss_def_subinfo),
+        "subscription-userinfo": str(fin_subscription_userinfo),
         "announce-url": announce_url,
         "support-url": support_url
     }
