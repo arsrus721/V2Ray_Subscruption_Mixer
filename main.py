@@ -121,7 +121,8 @@ def request_sub(url): # USED
 def sub_info(url):    # USED
     response = requests.get(url=url)
     event_register("[func:sub_info] requested")
-    event_register(f"[func:sub_info] HEAD {response.headers}")
+    if response.status_code != 200:
+        return None
     return response.headers["subscription-userinfo"]
 def req_subs(url):    # USED
     response = requests.get(url=url)
@@ -362,14 +363,19 @@ async def subsys(sub_id: str, request: Request, response: Response):
     fin_total = 0
     fin_expire = 0
     for index, source in enumerate(sources):
-        if expire_source is None:
-            print("expire-source not found")
-        upload_key, download_key, total_key, expire_key = subscription_userinfo_simple(sub_info(source + sub_id))
-        fin_upload = fin_upload + upload_key
-        download_key = fin_download + download_key
-        total_key = fin_total + total_key
+        info = sub_info(source + sub_id) 
+        if info is None: 
+            continue 
+
+        upload_key, download_key, total_key, expire_key = subscription_userinfo_simple(info)
+    
+        fin_upload += int(upload_key)
+        fin_download += int(download_key)
+        fin_total += int(total_key)
+    
         if index == expire_source:
             fin_expire = expire_key
+
 
     fin_subscription_userinfo = combine_stats(upload=fin_upload, download=fin_download, total=fin_total, expire=fin_expire)
 
