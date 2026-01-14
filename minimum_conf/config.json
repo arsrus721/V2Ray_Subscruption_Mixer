@@ -4,7 +4,10 @@
     "profile-title": "NAME VPN",
     "announce": "ABOUT",
     "v2raytun-announce": "#d9c1c1ABOUT",
-    "subscription-userinfo-ord": 0,
+    "subscription-userinfo": {
+        "type": "combination",
+        "expire-source" : 0
+    },
     "profile-update-interval": 1,
     "announce-url": "https://example.com/path",
     "support-url": "https://example.com/path",
