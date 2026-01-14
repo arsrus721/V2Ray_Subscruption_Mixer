@@ -165,7 +165,7 @@ Modify connection comments/names with various operations:
   ```json
   {"type": "start-delete", "count": 6}
   ```
-  Example: `NAMEtxtNEW` → `NAMEtx` (with count=6)
+  Example: `NAMEtxtNEW` → `tNEW` (with count=6)
 
 - **end-delete** - Delete N characters from end
   ```json
