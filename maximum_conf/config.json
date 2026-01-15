@@ -1,6 +1,6 @@
 {
     "type": "mixer",
-    "sources": ["http://url/path/", "https://url1/path/"],
+    "sources": [{"source": "http://url/path/", "exists-check": true}, {"source":"https://url1/path/", "exists-check": false}],
     "profile-title": "NAME VPN",
     "announce": "ABOUT",
     "v2raytun-announce": "#d9c1c1ABOUT",
