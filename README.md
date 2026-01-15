@@ -13,6 +13,7 @@ V2Ray Subscription Mixer is a tool for merging multiple V2Ray subscriptions into
 - 🏷️ Advanced comment management for connections
 - 🔧 Modify base parameters (IP, port, SNI)
 - 📊 Support for subscription headers (compatible with [v2raytun headers](https://docs.v2raytun.com/overview/supported-headers))
+- ✅ Optional source availability checking
 - 🚀 Fast and lightweight FastAPI-based server
 
 ## Installation
@@ -53,11 +54,17 @@ python main.py
 ```json
 {
     "type": "mixer",
-    "sources": ["http://url/path/", "https://url1/path/"],
+    "sources": [
+        {"source": "http://url/path/", "exists-check": true},
+        {"source": "https://url1/path/", "exists-check": false}
+    ],
     "profile-title": "NAME VPN",
     "announce": "ABOUT",
     "v2raytun-announce": "#d9c1c1ABOUT",
-    "subscription-userinfo-ord": 0,
+    "subscription-userinfo": {
+        "type": "combination",
+        "expire-source": 0
+    },
     "profile-update-interval": 1,
     "announce-url": "https://example.com/path",
     "support-url": "https://example.com/path",
@@ -75,16 +82,52 @@ python main.py
 | Parameter | Description |
 |-----------|-------------|
 | `type` | Configuration type (always "mixer") |
-| `sources` | Array of subscription URLs to combine |
+| `sources` | Array of subscription source objects (see below) |
 | `profile-title` | Name of the combined profile |
 | `announce` | Announcement text |
 | `v2raytun-announce` | V2RayTun-specific announcement |
-| `subscription-userinfo-ord` | Subscription user info order |
+| `subscription-userinfo` | Subscription user info configuration (see below) |
 | `profile-update-interval` | Update interval in hours |
 | `announce-url` | URL for announcements |
 | `support-url` | Support page URL |
 | `rules` | Array of modification rules (see below) |
 | `server-settings` | Server configuration |
+
+### Sources Configuration
+
+Each source is an object with the following parameters:
+
+```json
+{
+    "source": "https://example.com/subscription",
+    "exists-check": true
+}
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `source` | Subscription URL |
+| `exists-check` | Source availability requirement: <br>• `true` - **Required source**. If unavailable (404 or error), returns 404 to user<br>• `false` - **Optional source**. If unavailable, continues with other sources |
+
+**Use cases:**
+- Set `exists-check: true` for critical/primary sources
+- Set `exists-check: false` for backup/optional sources that may be temporarily unavailable
+
+### Subscription User Info
+
+Configuration for subscription information management:
+
+```json
+"subscription-userinfo": {
+    "type": "combination",
+    "expire-source": 0
+}
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `type` | Method for combining subscription info (e.g., "combination") |
+| `expire-source` | Index of source (from `sources` array) to use for expiration date |
 
 ### Server Settings
 
@@ -209,11 +252,17 @@ See `maximum_conf/config.json` for a complete example with all possible rule typ
 ```json
 {
     "type": "mixer",
-    "sources": ["http://url/path/", "https://url1/path/"],
+    "sources": [
+        {"source": "http://url/path/", "exists-check": true},
+        {"source": "https://url1/path/", "exists-check": false}
+    ],
     "profile-title": "NAME VPN",
     "announce": "ABOUT",
     "v2raytun-announce": "#d9c1c1ABOUT",
-    "subscription-userinfo-ord": 0,
+    "subscription-userinfo": {
+        "type": "combination",
+        "expire-source": 0
+    },
     "profile-update-interval": 1,
     "announce-url": "https://example.com/path",
     "support-url": "https://example.com/path",
@@ -254,6 +303,7 @@ See `maximum_conf/config.json` for a complete example with all possible rule typ
 - **Multiple SNI Matching**: Each rule can match multiple SNI values
 - **Random Selection**: IP and SNI rewrite operations randomly select from provided arrays
 - **Header Support**: Full compatibility with v2raytun subscription headers
+- **Flexible Source Management**: Mix required and optional sources for robust configuration
 
 ## Requirements
 
