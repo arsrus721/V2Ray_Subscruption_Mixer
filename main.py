@@ -347,73 +347,93 @@ def combine_stats(**kwargs):
 
 @app.get(f"{accept_prefix}/{{sub_id}}")
 async def subsys(sub_id: str, request: Request, response: Response):
+    responses = {}
     start = time.time()
-    if not sources or len(sources) == 0:
-        end = time.time()
-        event_register(f"[func:subsys] Elapsed time {end - start}")
-        raise HTTPException(status_code=500, detail="No sources configured")
-    print(f"[INFO] LIST {sources[0] + sub_id}")
-    if not request_sub(sources[0] + sub_id):
-        end = time.time()
-        event_register(f"[func:subsys] Elapsed time {end - start}")
-        raise HTTPException(status_code=404, detail="Subscription not found")
-
     fin_upload = 0
     fin_download = 0
     fin_total = 0
     fin_expire = 0
-    for index, source in enumerate(sources):
-        info = sub_info(source + sub_id) 
-        if info is None: 
-            continue 
+    urls_list = []
 
-        upload_key, download_key, total_key, expire_key = subscription_userinfo_simple(info)
-    
+    if not sources:
+        end = time.time()
+        event_register(f"[func:subsys] Elapsed time {end - start}")
+        raise HTTPException(status_code=500, detail="No sources configured")
+
+    print(f"[INFO] LIST {sub_id}")
+
+    for src in sources:
+        event_register(f"[func:subsys] Currently requesting: {src['source']}")
+        rurl = src["source"] + sub_id
+        resp = requests.get(rurl)
+        if src.get("exists-check") is True and resp.status_code != 200:
+            end = time.time()
+            event_register(f"[func:subsys] Elapsed time {end - start}")
+            raise HTTPException(status_code=404, detail="Subscription not found")
+        responses[rurl] = resp
+
+    for index, src in enumerate(sources):
+        rurl = src["source"] + sub_id
+        resp = responses[rurl]
+        if resp.status_code != 200:
+            continue
+
+        userinfo = resp.headers.get("subscription-userinfo")
+        if not userinfo:
+            continue
+
+        upload_key, download_key, total_key, expire_key = subscription_userinfo_simple(userinfo)
+
         fin_upload += int(upload_key)
         fin_download += int(download_key)
         fin_total += int(total_key)
-    
+
         if index == expire_source:
             fin_expire = expire_key
 
-
-    fin_subscription_userinfo = combine_stats(upload=fin_upload, download=fin_download, total=fin_total, expire=fin_expire)
-
+    fin_subscription_userinfo = combine_stats(
+        upload=fin_upload,
+        download=fin_download,
+        total=fin_total,
+        expire=fin_expire
+    )
 
     if "v2raytun" in request.headers.get("user-agent", "").lower():
         event_register("[func:subsys] v2raytun matched")
-        ss_announce = v2raytun_announce
+        fin_announce = v2raytun_announce
     else:
-        ss_announce = announce
-    urls_list = []
-    for source in sources:
-        event_register(f"[func:subsys] Currently requesting: {source}")
-        raw_text = req_subs(source + sub_id).text
-        urls_list.extend(decode_vless_lines(raw_text)) 
+        fin_announce = announce
+
+    for src in sources:
+        rurl = src["source"] + sub_id
+        raw_text = responses[rurl].text
+        urls_list.extend(decode_vless_lines(raw_text))
+
     event_register(f"[func:subsys] Finnaly urls_list: {urls_list}")
-    ss_rs_dri = vlesses_creator(urls_list)
-    event_register("[func:subsys] ss_rs_dri created")
-    ss_url = base64.b64encode(
-        ss_rs_dri.encode("utf-8")
+
+    fin_url = vlesses_creator(urls_list)
+    fin_url = base64.b64encode(fin_url.encode("utf-8")).decode("utf-8")
+
+    fin_announce = "base64:" + base64.b64encode(
+        fin_announce.encode("utf-8")
     ).decode("utf-8")
-    ss_announce = base64.b64encode(
-        ss_announce.encode("utf-8")
-    ).decode("utf-8")
-    ss_announce = "base64:" + ss_announce
+
     headers = {
-        "profile-title": pr_profile_title,
+        "profile-title": str(pr_profile_title),
         "profile-update-interval": str(profile_update_interval),
-        "announce": ss_announce,
+        "announce": str(fin_announce),
         "subscription-userinfo": str(fin_subscription_userinfo),
-        "announce-url": announce_url,
-        "support-url": support_url
+        "announce-url": str(announce_url),
+        "support-url": str(support_url)
     }
+
     event_register(f"[func:subsys] Finally headers: {headers}")
     end = time.time()
     event_register(f"[func:subsys] Elapsed time {end - start}")
-    event_register(f"[func:subsys] Url Config {ss_rs_dri}")
+    event_register(f"[func:subsys] Url Config {fin_url}")
+
     return Response(
-        content=ss_url,
+        content=fin_url,
         media_type="text/plain; charset=utf-8",
         headers=headers
     )
