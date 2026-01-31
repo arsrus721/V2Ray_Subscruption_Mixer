@@ -13,10 +13,10 @@
     "support-url": "https://example.com/path",
     "rules": [
         {
+            "matcher-type":"sni"
             "sni": ["www.google.com", "google.com"],
             "base": [{"type": "rewriteip", "ips": ["1.2.3.4"]},{"type": "rewriteport", "port": 8080}, {"type": "rewritesni", "sni": ["youtube.com", "www.youtube.com"]}],
             "comment":[{"type":"start-add","text":"TEXT"},{"type":"end-add","text":"TEXT"},{"type":"start-exactly-add","text":"TEXT","count":1},{"type":"end-exactly-add","text":"TEXT","count":1},{"type":"add-after","text":"TEXT","after":"TEXT"},{"type":"add-before","text":"TEXT","before":"before"},{"type":"delete-all-after","after":"TEXT"},{"type":"delete-all-before","before":"TEXT"},{"type":"start-delete","count":1},{"type":"end-delete","count":1}]
-
         }
     ],
     "server-settings": {
