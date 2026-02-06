@@ -1,325 +1,207 @@
-# V2Ray Subscription Mixer
+# V2Ray Subscription Server (Modular)
 
-A flexible V2Ray subscription mixer that combines multiple subscription sources with advanced rule-based configuration modification.
+A modular **V2Ray / VLESS subscription server** built with **FastAPI**.
+It aggregates multiple subscription sources, processes them using pluggable modules, and serves the result to clients in the required format (base64 / plain).
 
-## Description
+The project is designed for flexible subscription logic **without modifying the core server**.
 
-V2Ray Subscription Mixer is a tool for merging multiple V2Ray subscriptions into one, with flexible modification of connection parameters through a rule system. The mixer allows you to combine sources and modify comments, IP addresses, ports, and SNI on the fly.
+---
 
 ## Features
 
-- 🔄 Combine multiple subscription sources into one
-- 🎯 Flexible rule system for configuration modification
-- 🏷️ Advanced comment management for connections
-- 🔧 Modify base parameters (IP, port, SNI)
-- 📊 Support for subscription headers (compatible with [v2raytun headers](https://docs.v2raytun.com/overview/supported-headers))
-- ✅ Optional source availability checking
-- 🚀 Fast and lightweight FastAPI-based server
+* 🚀 FastAPI + Uvicorn
+* 🔌 Modular subscription processing
+* 📡 Aggregation of multiple sources
+* 🔐 Base64 encode / decode support
+* 🧩 Custom processing modules
+* 📱 Client-aware behavior (v2rayTun, etc.)
+* 📝 Flexible logging system
+
+---
+
+## Project Structure
+
+```text
+.
+├── main.py                # Main server
+├── module.py              # Example processing module
+├── config.json            # Main server config
+├── module_config.json     # Module config
+├── sub.log                # Logs (default)
+└── README.md
+```
+
+---
 
 ## Installation
 
-1. Clone the repository:
 ```bash
-git clone https://github.com/arsrus721/V2Ray_Subscription_Mixer.git
-cd V2Ray_Subscription_Mixer
-```
-
-2. Install required dependencies:
-```bash
+python -m venv venv
+source venv/bin/activate
 pip install fastapi uvicorn requests
 ```
 
-3. Copy one of the configuration files to the root directory:
+---
+
+## Run
+
 ```bash
-# For minimal configuration
-cp minimum_conf/config.json config.json
-
-# OR for maximum configuration with examples
-cp maximum_conf/config.json config.json
-```
-
-4. Edit `config.json` according to your needs
-
-5. Run the server:
-```bash
-python3 main.py
-# or
 python main.py
 ```
 
-## Configuration
+The server will start on:
 
-### Minimal Configuration Example
+```
+http://0.0.0.0:8991
+```
+
+---
+
+## API
+
+### Get subscription
+
+```http
+GET /cursed/sub/{sub_id}
+```
+
+**Example:**
+
+```
+GET /cursed/sub/abcdef123
+```
+
+Where `sub_id` is the subscription ID appended to every source URL.
+
+---
+
+## Main Config (`config.json`)
 
 ```json
 {
-    "type": "mixer",
-    "sources": [
-        {"source": "http://url/path/", "exists-check": true},
-        {"source": "https://url1/path/", "exists-check": false}
-    ],
-    "profile-title": "NAME VPN",
-    "announce": "ABOUT",
-    "v2raytun-announce": "#d9c1c1ABOUT",
-    "subscription-userinfo": {
-        "type": "combination",
-        "expire-source": 0
-    },
-    "profile-update-interval": 1,
-    "announce-url": "https://example.com/path",
-    "support-url": "https://example.com/path",
-    "rules": [],
-    "server-settings": {
-        "accept-prefix": "/cursed/sub",
-        "bind": "0.0.0.0",
-        "port": 8080
-    }
+  "sources": [],
+  "module": {
+    "file": "module",
+    "func": "main",
+    "config_file": "module_config.json"
+  },
+  "logging": {
+    "log_level": "DEBUG",
+    "log_file": "sub.log"
+  },
+  "server": {
+    "prefix": "/cursed/sub",
+    "port": 8991,
+    "host": "0.0.0.0"
+  }
 }
 ```
 
-### Configuration Parameters
+### Fields description
 
-| Parameter | Description |
-|-----------|-------------|
-| `type` | Configuration type (always "mixer") |
-| `sources` | Array of subscription source objects (see below) |
-| `profile-title` | Name of the combined profile |
-| `announce` | Announcement text |
-| `v2raytun-announce` | V2RayTun-specific announcement |
-| `subscription-userinfo` | Subscription user info configuration (see below) |
-| `profile-update-interval` | Update interval in hours |
-| `announce-url` | URL for announcements |
-| `support-url` | Support page URL |
-| `rules` | Array of modification rules (see below) |
-| `server-settings` | Server configuration |
+#### `sources`
 
-### Sources Configuration
-
-Each source is an object with the following parameters:
+List of subscription sources:
 
 ```json
 {
-    "source": "https://example.com/subscription",
-    "exists-check": true
+  "source": "https://example.com/sub/",
+  "exists-check": true
 }
 ```
 
-| Parameter | Description |
-|-----------|-------------|
-| `source` | Subscription URL |
-| `exists-check` | Source availability requirement: <br>• `true` - **Required source**. If unavailable (404 or error), returns 404 to user<br>• `false` - **Optional source**. If unavailable, continues with other sources |
+* `source` — source URL (without `sub_id`)
+* `exists-check` — if `true`, server returns 404 if the source is unavailable
 
-**Use cases:**
-- Set `exists-check: true` for critical/primary sources
-- Set `exists-check: false` for backup/optional sources that may be temporarily unavailable
+---
 
-### Subscription User Info
+## Modules
 
-Configuration for subscription information management:
+A module is a regular Python file that contains a subscription processing function.
 
-```json
-"subscription-userinfo": {
-    "type": "combination",
-    "expire-source": 0
-}
+### Module function signature
+
+```python
+def main(response_list, headers, sub_id, module_config):
+    return status_code, content, headers, b64encode
 ```
 
-| Parameter | Description |
-|-----------|-------------|
-| `type` | Method for combining subscription info (e.g., "combination") |
-| `expire-source` | Index of source (from `sources` array) to use for expiration date |
+### Parameters
 
-### Server Settings
+* `response_list` — list of responses from sources
+* `headers` — client HTTP headers
+* `sub_id` — subscription ID
+* `module_config` — module configuration
 
-| Parameter | Description |
-|-----------|-------------|
-| `accept-prefix` | URL prefix for subscription endpoint |
-| `bind` | IP address to bind to |
-| `port` | Port number |
-| `advanced-print` | Enable detailed logging (optional) |
+### Return values
 
-## Rules System
+| Parameter     | Description                        |
+| ------------- | ---------------------------------- |
+| `status_code` | HTTP status code                   |
+| `content`     | List of strings (VLESS URLs)       |
+| `headers`     | Response headers                   |
+| `b64encode`   | Whether to encode output as base64 |
 
-Rules are matched by SNI (Server Name Indication) in vless or other protocol links. Each rule can contain `base` modifications and `comment` modifications.
+---
 
-### Base Modifications
+## Example Module (`module.py`)
 
-Modify core connection parameters:
+Module functionality:
 
-```json
-"base": [
-    {"type": "rewriteip", "ips": ["1.2.3.4", "5.6.7.8"]},
-    {"type": "rewriteport", "port": 8080},
-    {"type": "rewritesni", "sni": ["youtube.com", "www.youtube.com"]}
-]
-```
+* Parses VLESS URLs
+* Merges them into a single list
+* Changes `announce` depending on `User-Agent`
+* Returns a base64-encoded subscription
 
-- **rewriteip** - Replace IP address (randomly selected from array)
-- **rewriteport** - Replace port
-- **rewritesni** - Replace SNI (randomly selected from array)
+Supported clients:
 
-### Comment Modifications
+* `v2rayTun`
+* Standard V2Ray clients
 
-Modify connection comments/names with various operations:
+---
 
-#### Add Operations
-- **start-add** - Add text at the beginning
-  ```json
-  {"type": "start-add", "text": "PREFIX-"}
-  ```
-
-- **end-add** - Add text at the end
-  ```json
-  {"type": "end-add", "text": "-SUFFIX"}
-  ```
-
-- **start-exactly-add** - Add text at specific position from start
-  ```json
-  {"type": "start-exactly-add", "text": "INSERT", "count": 5}
-  ```
-
-- **end-exactly-add** - Add text at specific position from end
-  ```json
-  {"type": "end-exactly-add", "text": "INSERT", "count": 3}
-  ```
-
-- **add-after** - Add text after specified character/string
-  ```json
-  {"type": "add-after", "text": "NEW", "after": "-"}
-  ```
-
-- **add-before** - Add text before specified character/string
-  ```json
-  {"type": "add-before", "text": "NEW", "before": "-"}
-  ```
-
-#### Delete Operations
-- **delete-all-after** - Delete everything after specified character/string
-  ```json
-  {"type": "delete-all-after", "after": "|"}
-  ```
-
-- **delete-all-before** - Delete everything before specified character/string
-  ```json
-  {"type": "delete-all-before", "before": "|"}
-  ```
-
-- **start-delete** - Delete N characters from start
-  ```json
-  {"type": "start-delete", "count": 6}
-  ```
-  Example: `NAMEtxtNEW` → `tNEW` (with count=6)
-
-- **end-delete** - Delete N characters from end
-  ```json
-  {"type": "end-delete", "count": 3}
-  ```
-
-### Complete Rule Example
+## Module Config (`module_config.json`)
 
 ```json
 {
-    "sni": ["www.google.com", "google.com"],
-    "base": [
-        {"type": "rewriteip", "ips": ["1.2.3.4"]},
-        {"type": "rewriteport", "port": 443},
-        {"type": "rewritesni", "sni": ["cdn.example.com"]}
-    ],
-    "comment": [
-        {"type": "start-add", "text": "🇺🇸 "},
-        {"type": "end-add", "text": " | Premium"},
-        {"type": "delete-all-after", "after": "|"}
-    ]
+  "profile-title": "A VPN",
+  "subscription-userinfo": "",
+  "profile-update-interval": "1",
+  "announce": "HELLO",
+  "v2raytun-announce": "HELLO2",
+  "announce-url": "https://t.me/moau12"
 }
 ```
 
-## Usage
+---
 
-After starting the server, your combined subscription will be available at:
+## Logging
 
-```
-http://your-server:8080/cursed/sub
-```
+Supported log levels:
 
-(Replace `/cursed/sub` with your `accept-prefix` value)
+* `DEBUG`
+* `INFO`
+* `WARNING`
+* `ERROR`
+* `CRITICAL`
 
-You can use this URL in your V2Ray client as a subscription link.
+Logs are written to:
 
-## Maximum Configuration Example
+* file (`sub.log`)
+* stdout
 
-See `maximum_conf/config.json` for a complete example with all possible rule types:
+---
 
-```json
-{
-    "type": "mixer",
-    "sources": [
-        {"source": "http://url/path/", "exists-check": true},
-        {"source": "https://url1/path/", "exists-check": false}
-    ],
-    "profile-title": "NAME VPN",
-    "announce": "ABOUT",
-    "v2raytun-announce": "#d9c1c1ABOUT",
-    "subscription-userinfo": {
-        "type": "combination",
-        "expire-source": 0
-    },
-    "profile-update-interval": 1,
-    "announce-url": "https://example.com/path",
-    "support-url": "https://example.com/path",
-    "rules": [
-        {
-            "sni": ["www.google.com", "google.com"],
-            "base": [
-                {"type": "rewriteip", "ips": ["1.2.3.4"]},
-                {"type": "rewriteport", "port": 8080},
-                {"type": "rewritesni", "sni": ["youtube.com", "www.youtube.com"]}
-            ],
-            "comment": [
-                {"type": "start-add", "text": "TEXT"},
-                {"type": "end-add", "text": "TEXT"},
-                {"type": "start-exactly-add", "text": "TEXT", "count": 1},
-                {"type": "end-exactly-add", "text": "TEXT", "count": 1},
-                {"type": "add-after", "text": "TEXT", "after": "TEXT"},
-                {"type": "add-before", "text": "TEXT", "before": "before"},
-                {"type": "delete-all-after", "after": "TEXT"},
-                {"type": "delete-all-before", "before": "TEXT"},
-                {"type": "start-delete", "count": 1},
-                {"type": "end-delete", "count": 1}
-            ]
-        }
-    ],
-    "server-settings": {
-        "accept-prefix": "/cursed/sub",
-        "bind": "0.0.0.0",
-        "port": 8080,
-        "advanced-print": true
-    }
-}
-```
+## Ideas for Extensions
 
-## Advanced Features
+* 🔐 Token-based authentication
+* 🗂 Subscription caching
+* 📊 Metrics
+* 🔁 Auto-refresh sources
+* 🌍 Geo-based node filtering
 
-- **Unlimited Rules**: You can create as many rules as needed
-- **Multiple SNI Matching**: Each rule can match multiple SNI values
-- **Random Selection**: IP and SNI rewrite operations randomly select from provided arrays
-- **Header Support**: Full compatibility with v2raytun subscription headers
-- **Flexible Source Management**: Mix required and optional sources for robust configuration
-
-## Requirements
-
-- Python 3.x
-- FastAPI
-- Uvicorn
-- Requests
+---
 
 ## License
 
-This project is licensed under the MIT License.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Support
-
-For issues and questions, please open an issue on GitHub.
+MIT

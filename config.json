@@ -1,0 +1,13 @@
+{
+    "sources": [],
+    "module": {"file": "module", "func": "main", "config_file": "module_config.json"},
+    "logging": {
+        "log_level": "DEBUG",
+        "log_file": "sub.log"
+    },
+    "server": {
+        "prefix": "/cursed/sub",
+        "port": 8991,
+        "host": "0.0.0.0"
+    }
+}
