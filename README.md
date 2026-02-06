@@ -6,6 +6,7 @@ It aggregates multiple subscription sources, processes them using pluggable modu
 The project is designed for flexible subscription logic **without modifying the core server**.
 
 ---
+## Since version 3.0.0, the code has been modularized. If you want to use rules and don't want to write your own module, download version 2.3.0.
 
 ## Features
 
